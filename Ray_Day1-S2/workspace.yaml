@@ -1,0 +1,24 @@
+# Per-student training workspace: `anyscale workspace_v2 create -f workspace.yaml`.
+name: llm-post-training-serving
+
+# Training image (see Dockerfile): ray-llm 2.57.0 + vLLM 0.25.x, direct streaming baked in.
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/summit-2026-coding-agent-training:2.57.0
+
+# Cluster-level so the Serve controller inherits them (direct streaming on).
+env_vars:
+  RAY_SERVE_ENABLE_HA_PROXY: "1"
+  RAY_SERVE_LLM_ENABLE_DIRECT_STREAMING: "1"
+
+idle_termination_minutes: 120
+
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge   # CPU-only head
+    resources:
+      CPU: 0                    # unschedulable — orchestration only; serve run lands on the g6 worker
+      GPU: 0
+  worker_nodes:
+    # 1x g6.12xlarge (4x L4, TP=4), reserved so it stays up for Part 1's serve run.
+    - instance_type: g6.12xlarge
+      min_nodes: 1
+      max_nodes: 1
